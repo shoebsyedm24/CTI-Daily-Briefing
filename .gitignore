@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+db/threats.sqlite*
+.DS_Store
+.hermes/memory/
+.hermes/cache/
+chroma_db/
+logs/
+*.log
+data/*.json

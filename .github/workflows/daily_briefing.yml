@@ -1,0 +1,65 @@
+name: CTI Daily Briefing
+
+on:
+  schedule:
+    - cron: '0 13 * * *'  # 7am CST (UTC-6). Shifts to 8am in summer (CDT).
+  workflow_dispatch:       # allows manual trigger from GitHub UI
+
+jobs:
+  briefing:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # needed to push briefings/ back to the repo
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Restore DB cache
+        uses: actions/cache@v4
+        with:
+          path: db/threats.sqlite
+          key: threats-db-${{ github.run_number }}
+          restore-keys: threats-db-
+
+      - name: Initialize DB if missing
+        run: |
+          [ -f db/threats.sqlite ] || sqlite3 db/threats.sqlite < db/schema.sql
+
+      - name: Restore MITRE cache
+        uses: actions/cache@v4
+        with:
+          path: data/
+          key: mitre-data-${{ hashFiles('tools/mitre_data.py') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download MITRE allowlists if missing
+        run: |
+          [ -f data/mitre_enterprise_techniques.json ] || python -m tools.mitre_data download
+
+      - name: Run pipeline
+        env:
+          CLOUD_MODE: "1"
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          TZ: America/Chicago
+        run: python -m tools.daily_run --no-git
+
+      - name: Commit briefing to repo
+        run: |
+          git config user.name "CTI Bot"
+          git config user.email "actions@github.com"
+          git add briefings/
+          git diff --staged --quiet || git commit -m "briefing: $(date -u +%Y-%m-%d)"
+          git push

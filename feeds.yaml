@@ -1,0 +1,54 @@
+# credibility: high=+3 base, medium=+1, low=0
+# priority_boost: flat add after rule scoring
+# keyword_whitelist: any hit = +2 deterministic boost
+
+feeds:
+  - { name: The Hacker News,        url: https://feeds.feedburner.com/TheHackersNews,                       type: rss, credibility: medium, sector: general }
+  - { name: BleepingComputer,       url: https://www.bleepingcomputer.com/feed/,                            type: rss, credibility: medium, sector: general }
+  - { name: Cyber Security News,    url: https://cybersecuritynews.com/feed/,                               type: rss, credibility: low,    sector: general }
+  - { name: Dark Reading,           url: https://www.darkreading.com/rss.xml,                               type: rss, credibility: medium, sector: general }
+  - { name: Krebs on Security,      url: https://krebsonsecurity.com/feed/,                                 type: rss, credibility: high,   sector: general }
+  - { name: SecurityWeek,           url: https://www.securityweek.com/feed/,                                type: rss, credibility: medium, sector: general }
+  - { name: SC Magazine,            url: https://www.scmagazine.com/feed,                                   type: rss, credibility: medium, sector: general }
+  - { name: Recorded Future Blog,   url: https://www.recordedfuture.com/feed/,                              type: rss, credibility: high,   sector: general }
+  - { name: Security Affairs,       url: https://securityaffairs.com/feed,                                  type: rss, credibility: medium, sector: general }
+
+  # Government / authoritative
+  - { name: CISA All Advisories,    url: https://www.cisa.gov/cybersecurity-advisories/all.xml,             type: rss, credibility: high, sector: general, priority_boost: 2 }
+  - name: CISA ICS Advisories
+    url: https://www.cisa.gov/cybersecurity-advisories/ics-advisories.xml
+    type: rss
+    credibility: high
+    sector: energy
+    priority_boost: 3
+    keyword_whitelist: [modbus, dnp3, bacnet, iec-61850, "iec 61850", "opc ua", scada, plc, hmi, rtu, ied, ems, "energy management system", "distribution automation", substation]
+  - { name: CISA KEV Catalog,       url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json, type: json_kev, credibility: high, sector: general, priority_boost: 5 }
+  - name: NVD Recent CVEs
+    url: "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=50"
+    type: nvd_api
+    credibility: high
+    sector: general
+
+  - name: HHS HC3 Alerts
+    url: https://www.hhs.gov/sites/default/files/hc3-rss.xml
+    type: rss
+    credibility: high
+    sector: healthcare
+    priority_boost: 3
+    keyword_whitelist: [hl7, fhir, dicom, "medical device", phi, hipaa, ehr, pacs, imaging, clinical, fda, "ransomware hospital"]
+
+  - { name: ENISA Threat Landscape, url: https://www.enisa.europa.eu/topics/cyber-threats/threats-and-trends/rss, type: rss, credibility: high, sector: general }
+
+# Vendors actually in your environment. Match → +2 score.
+# IT stack is universal — affects both sectors.
+asset_inventory:
+  energy_ot_vendors:  [Siemens, Schneider Electric, GE Digital, Rockwell, Allen-Bradley, ABB, Honeywell, SEL, Emerson, Yokogawa, Mitsubishi Electric]
+  healthcare_vendors: [Epic, Cerner, Philips Healthcare, GE Healthcare, Medtronic, BD, Becton Dickinson, Stryker, Baxter, Siemens Healthineers]
+  it_stack:           [Rapid7, ServiceNow, Microsoft, Cisco, Palo Alto Networks, VMware, Citrix, Fortinet, CrowdStrike, Splunk]
+
+keywords:
+  ot:         [modbus, dnp3, bacnet, "iec 61850", "iec-61850", "opc ua", scada, plc, hmi, rtu, ied, iccp, "distribution automation", "energy management system", ems, "industrial control", substation]
+  healthcare: [hl7, fhir, dicom, "medical device", phi, hipaa, "electronic health record", ehr, pacs, "medical imaging", "fda cleared", "class ii device", "class iii device", "hospital ransomware", "clinical operations"]
+  exploitation_high: ["exploited in the wild", "actively exploited", "active exploitation", "mass exploitation", "zero-day", "zero day", "in-the-wild exploitation"]
+  exploitation_mid:  [ransomware, "proof of concept", "proof-of-concept", "poc available", "remote code execution", rce, "pre-auth rce"]
+  exploitation_low:  ["authentication bypass", "auth bypass", "internet-facing", "publicly exposed", "unauthenticated"]
