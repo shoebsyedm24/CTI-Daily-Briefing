@@ -16,8 +16,10 @@ def today_ct() -> date:
 
 
 def cutoff_utc_iso(hours_back: int) -> str:
-    """ISO timestamp in UTC, N hours before now-CT. Use as SQL parameter."""
-    return (now_ct() - timedelta(hours=hours_back)).astimezone(UTC).isoformat()
+    """UTC timestamp N hours before now-CT, in SQLite's CURRENT_TIMESTAMP format.
+    Must use space separator (not T) to compare correctly with stored ingested_at values."""
+    dt = (now_ct() - timedelta(hours=hours_back)).astimezone(UTC)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def is_weekend() -> bool:

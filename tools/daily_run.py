@@ -51,6 +51,9 @@ def _deliver(args):
             log.info("No briefing for today — skipping delivery")
             return
         md_path = Path(row["markdown_path"])
+        if not md_path.exists():
+            # Stored path may have a different root (e.g., seeded from another machine)
+            md_path = ROOT / "briefings" / md_path.name
         md = md_path.read_text()
 
         if not row["email_sent_at"] and not args.no_email:
