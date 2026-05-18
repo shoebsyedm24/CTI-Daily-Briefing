@@ -24,11 +24,22 @@ FALLBACK_LOCAL = ["qwen3:14b"]
 
 def chat(role: Literal["default", "security", "composer"],
          prompt: str, system: str = "", json_mode: bool = False) -> str:
-    # CLOUD_MODE: skip local Ollama entirely, go straight to Groq
+    # CLOUD_MODE: skip local Ollama, try Groq then Together.ai
     if os.getenv("CLOUD_MODE") == "1":
+        last_err = None
         if os.getenv("GROQ_API_KEY"):
-            return _groq(prompt, system, json_mode)
-        raise RuntimeError("CLOUD_MODE=1 but GROQ_API_KEY is not set")
+            try:
+                return _groq(prompt, system, json_mode)
+            except Exception as e:
+                last_err = e
+                log.warning(f"Groq failed, trying Together.ai: {e}")
+        if os.getenv("TOGETHER_API_KEY"):
+            try:
+                return _together(prompt, system, json_mode)
+            except Exception as e:
+                last_err = e
+                log.error(f"Together.ai failed: {e}")
+        raise RuntimeError(f"All cloud LLMs failed: {last_err}")
 
     primary = MODELS.get(role, MODELS["default"])
     chain = [primary] + [m for m in FALLBACK_LOCAL if m != primary]
@@ -135,3 +146,24 @@ def _groq(prompt, system, json_mode):
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
     return client.chat.completions.create(**kwargs).choices[0].message.content
+
+
+def _together(prompt, system, json_mode):
+    msgs = ([{"role": "system", "content": system}] if system else []) + \
+           [{"role": "user", "content": prompt}]
+    payload = {
+        "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+        "messages": msgs,
+        "temperature": 0.2,
+    }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
+    r = httpx.post(
+        "https://api.together.xyz/v1/chat/completions",
+        headers={"Authorization": f"Bearer {os.environ['TOGETHER_API_KEY']}",
+                 "Content-Type": "application/json"},
+        json=payload,
+        timeout=60.0,
+    )
+    r.raise_for_status()
+    return r.json()["choices"][0]["message"]["content"]
