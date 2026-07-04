@@ -24,7 +24,7 @@ ALLOWED_ATTRS = {"a": ["href", "title"]}
 def send(markdown_body: str, on: date | None = None) -> None:
     on = on or today_ct()
     msg = EmailMessage()
-    msg["Subject"] = f"[CTI] Daily Briefing — {on.isoformat()}"
+    msg["Subject"] = f"CTI Daily Briefing — {on.isoformat()}"
     msg["From"] = os.environ["SMTP_USER"]
     msg["To"] = os.environ["EMAIL_TO"]
 
